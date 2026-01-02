@@ -3,7 +3,10 @@ name: Daily Portfolio Alert
 on:
   workflow_dispatch: {}
   schedule:
-    - cron: '0 4 * * *'
+    # Evening analysis: 10:00 AM UTC = 3:30 PM IST (right after market close)
+    # Runs Mon-Fri only (weekday trading days)
+    # Results ready next morning for action execution
+    - cron: '30 10 * * 1-5'
 
 jobs:
   alert:

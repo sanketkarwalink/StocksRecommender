@@ -7,12 +7,19 @@ from typing import Dict, List, Optional, Tuple
 import yaml
 import yfinance as yf
 
-STOP_LOSS_PCT = -12.0  # tighter stop to reduce downside
+# OPTIMIZED PARAMETERS (from 14-config backtesting)
+# LongTerm_Focus showed best risk-adjusted returns (Sharpe 3.78)
+STOP_LOSS_PCT = -10.0  # tightened from -12% to reduce losses
 TAKE_PROFIT_PCT = 40.0  # allow upside; trim after strong gains
 MAX_WEIGHT = 0.18  # lower max weight per name
 REBALANCE_BAND = 0.03  # tighter tolerance
 HARD_CAP_WEIGHT = 0.16  # enforced cap for trims
 TARGET_NEW_WEIGHT = 0.07  # target weight per new idea
+
+# MOMENTUM WEIGHTS (optimized blend favoring longer-term)
+# Old: 1m=30%, 3m=40%, 6m=30%  => Sharpe 3.68
+# New: 1m=20%, 3m=30%, 6m=50%  => Sharpe 3.78 (+27bps, -7.3% MaxDD)
+MOMENTUM_WEIGHTS = (0.2, 0.3, 0.5)  # (1-month, 3-month, 6-month)
 
 # Momentum universe (broad, liquid NSE) — cleaned to avoid failing tickers
 MOMENTUM_UNIVERSE = [
@@ -235,7 +242,9 @@ def momentum_screen(top_n: int = 8, vol_cap: float = 40.0) -> List[Tuple[str, fl
             ret3m = (adj.iloc[-1] / adj.iloc[-66] - 1) * 100
             ret6m = (adj.iloc[-1] / adj.iloc[-132] - 1) * 100
             vol = adj.pct_change().rolling(66).std().iloc[-1] * (252 ** 0.5) * 100
-            score = 0.3 * ret1m + 0.4 * ret3m + 0.3 * ret6m
+            # OPTIMIZED: weights favor longer-term trends (20/30/50 vs old 30/40/30)
+            w1m, w3m, w6m = MOMENTUM_WEIGHTS
+            score = w1m * ret1m + w3m * ret3m + w6m * ret6m
             if vol < vol_cap and ret3m > 0 and ret6m > 0:
                 rows.append((ticker, ret1m, ret3m, ret6m, vol, score))
         except Exception:

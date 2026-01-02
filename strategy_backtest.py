@@ -6,8 +6,16 @@ from typing import Iterable, List, Tuple
 import pandas as pd
 import yfinance as yf
 
-# Broad NSE universe (large + liquid midcaps), cleaned to avoid failing tickers
-UNIVERSE: List[str] = [
+# Import broader universe
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent))
+try:
+    from nifty500_universe import NIFTY500_TICKERS
+    UNIVERSE: List[str] = NIFTY500_TICKERS
+except ImportError:
+    # Fallback to smaller list
+    UNIVERSE: List[str] = [
     "RELIANCE.NS",
     "TCS.NS",
     "INFY.NS",
@@ -103,7 +111,7 @@ UNIVERSE: List[str] = [
     "POLYCAB.NS",
     "KEI.NS",
     "APLAPOLLO.NS",
-]
+    ]
 
 
 def chunked(seq: List[str], size: int) -> Iterable[List[str]]:

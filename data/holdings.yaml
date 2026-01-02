@@ -1,8 +1,4 @@
 holdings:
-  - name: Tata Elxsi
-    ticker: TATAELXSI.NS
-    quantity: 1
-    avg_price: 6120.50
   - name: Waaree Energies
     ticker: WAAREEENER.NS
     quantity: 1
@@ -17,18 +13,26 @@ holdings:
     avg_price: 810.85
   - name: Aether Industries
     ticker: AETHER.NS
-    quantity: 12
-    avg_price: 780.85
+    quantity: 10
+    avg_price: 847.85
   - name: HDB Financial Services
     ticker: null
     manual_price: 770.15
-    quantity: 18
-    avg_price: 740.00
-  - name: ITC
-    ticker: ITC.NS
-    quantity: 2
-    avg_price: 402.25
+    quantity: 13
+    avg_price: 764.58
   - name: IRFC
     ticker: IRFC.NS
     quantity: 9
     avg_price: 137.85
+  - name: National Aluminium
+    ticker: NATIONALUM.NS
+    quantity: 11
+    avg_price: 330.30
+  - name: Shriram Finance
+    ticker: SHRIRAMFIN.NS
+    quantity: 3
+    avg_price: 1010.35
+  - name: M&M Financial
+    ticker: M&MFIN.NS
+    quantity: 9
+    avg_price: 402.95

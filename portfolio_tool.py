@@ -274,10 +274,12 @@ def plan_rebalance(
             # Partial trim
             trim_value = (r.weight - HARD_CAP_WEIGHT) * total_market
             shares_to_sell = int(trim_value / r.price)
-            actual_trim_value = shares_to_sell * r.price
-            new_position_value = r.market_value - actual_trim_value
-            sell_cash += actual_trim_value
-            trims.append((r.holding.name, actual_trim_value, shares_to_sell, r.price, new_position_value))
+            # Only trim if we can sell at least 1 share
+            if shares_to_sell > 0:
+                actual_trim_value = shares_to_sell * r.price
+                new_position_value = r.market_value - actual_trim_value
+                sell_cash += actual_trim_value
+                trims.append((r.holding.name, actual_trim_value, shares_to_sell, r.price, new_position_value))
 
     lines.append(f"Cash to redeploy (from sells/trims): {sell_cash:,.0f}")
     tldr.append(f"Cash to redeploy: ~{sell_cash:,.0f}")

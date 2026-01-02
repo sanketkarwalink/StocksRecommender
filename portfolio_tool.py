@@ -7,19 +7,24 @@ from typing import Dict, List, Optional, Tuple
 import yaml
 import yfinance as yf
 
-# OPTIMIZED PARAMETERS (from 14-config backtesting)
-# LongTerm_Focus showed best risk-adjusted returns (Sharpe 3.78)
-STOP_LOSS_PCT = -10.0  # tightened from -12% to reduce losses
+# OPTIMIZED PARAMETERS (from 14-config backtesting on 317-stock universe)
+# Dynamic_SL10 showed best performance: 41.99% CAGR, Sharpe 5.19
+# (vs previous LongTerm_Focus: 27.82% CAGR, Sharpe 3.78 on limited 92-stock universe)
+STOP_LOSS_PCT = -10.0  # tighter stop-loss to limit downside
 TAKE_PROFIT_PCT = 40.0  # allow upside; trim after strong gains
 MAX_WEIGHT = 0.18  # lower max weight per name
 REBALANCE_BAND = 0.03  # tighter tolerance
 HARD_CAP_WEIGHT = 0.16  # enforced cap for trims
 TARGET_NEW_WEIGHT = 0.07  # target weight per new idea
 
-# MOMENTUM WEIGHTS (optimized blend favoring longer-term)
-# Old: 1m=30%, 3m=40%, 6m=30%  => Sharpe 3.68
-# New: 1m=20%, 3m=30%, 6m=50%  => Sharpe 3.78 (+27bps, -7.3% MaxDD)
-MOMENTUM_WEIGHTS = (0.2, 0.3, 0.5)  # (1-month, 3-month, 6-month)
+# MOMENTUM WEIGHTS (balanced 0.3/0.4/0.3 - weights all periods equally)
+# Enables effective stock selection across different momentum periods
+MOMENTUM_WEIGHTS = (0.3, 0.4, 0.3)  # (1-month, 3-month, 6-month)
+
+# DYNAMIC SIZING ENABLED: Size positions by momentum score (not equal-weight)
+# This allows the portfolio to overweight strongest signals and underweight weaker ones
+DYNAMIC_SIZING = True  # Weight positions by momentum score strength
+TOP_N_PICKS = 8  # Select top 8 momentum stocks per rebalance
 
 # Expanded NIFTY 500 Universe - filtered for data quality
 # Excludes known problematic tickers (delisted, bad data, etc.)

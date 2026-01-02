@@ -1,0 +1,64 @@
+Fetching data for 317 stocks from 2016-01-01 to 2026-01-02...
+Successfully loaded 251 stocks
+
+Testing 1/14: Baseline...
+  CAGR: 33.14%, MaxDD: -13.57%, Sharpe: 4.64
+
+Testing 2/14: Tighter_SL_10...
+  CAGR: 33.14%, MaxDD: -13.58%, Sharpe: 4.64
+
+Testing 3/14: Tighter_SL_8...
+  CAGR: 33.29%, MaxDD: -12.89%, Sharpe: 4.66
+
+Testing 4/14: Recent_Focus...
+  CAGR: 29.92%, MaxDD: -14.54%, Sharpe: 4.53
+
+Testing 5/14: Recent_SL10...
+  CAGR: 29.92%, MaxDD: -14.54%, Sharpe: 4.53
+
+Testing 6/14: LongTerm_Focus...
+  CAGR: 32.08%, MaxDD: -17.70%, Sharpe: 4.32
+
+Testing 7/14: Dynamic_Sizing...
+  CAGR: 31.96%, MaxDD: -15.42%, Sharpe: 4.69
+
+Testing 8/14: Dynamic_SL10...
+  CAGR: 31.97%, MaxDD: -15.36%, Sharpe: 4.70
+
+Testing 9/14: Top6_SL10...
+  CAGR: 34.33%, MaxDD: -13.27%, Sharpe: 4.49
+
+Testing 10/14: Top10_SL10...
+  CAGR: 30.73%, MaxDD: -17.38%, Sharpe: 4.47
+
+Testing 11/14: Aggressive_Combo...
+  CAGR: 28.42%, MaxDD: -16.48%, Sharpe: 4.45
+
+Testing 12/14: VeryTight_Dynamic...
+  CAGR: 31.46%, MaxDD: -15.04%, Sharpe: 4.66
+
+Testing 13/14: LowVol_SL10...
+  CAGR: 22.60%, MaxDD: -21.61%, Sharpe: 3.65
+
+Testing 14/14: Top12_SL10...
+  CAGR: 28.88%, MaxDD: -16.16%, Sharpe: 4.37
+
+========================================================================================================================
+Results saved to reports/optimization-20260102-233541.txt
+========================================================================================================================
+
+             name  top_n  vol_cap  stop_loss    momentum dynamic      cagr     max_dd   sharpe
+     Dynamic_SL10      8     40.0      -10.0 0.3/0.4/0.3       Y 31.971987 -15.355308 4.695279
+   Dynamic_Sizing      8     40.0      -12.0 0.3/0.4/0.3       Y 31.957040 -15.423646 4.693612
+VeryTight_Dynamic      8     40.0       -8.0 0.3/0.4/0.3       Y 31.458322 -15.041632 4.664944
+     Tighter_SL_8      8     40.0       -8.0 0.3/0.4/0.3       N 33.294422 -12.891626 4.659508
+         Baseline      8     40.0      -12.0 0.3/0.4/0.3       N 33.140680 -13.571435 4.643821
+    Tighter_SL_10      8     40.0      -10.0 0.3/0.4/0.3       N 33.139123 -13.580641 4.643623
+     Recent_Focus      8     40.0      -12.0 0.5/0.3/0.2       N 29.920331 -14.535063 4.529426
+      Recent_SL10      8     40.0      -10.0 0.5/0.3/0.2       N 29.920331 -14.535063 4.529426
+        Top6_SL10      6     40.0      -10.0 0.3/0.4/0.3       N 34.325268 -13.272298 4.493448
+       Top10_SL10     10     40.0      -10.0 0.3/0.4/0.3       N 30.727791 -17.380964 4.474616
+ Aggressive_Combo      8     40.0      -10.0 0.5/0.3/0.2       Y 28.417814 -16.477751 4.445025
+       Top12_SL10     12     40.0      -10.0 0.3/0.4/0.3       N 28.880618 -16.158557 4.365162
+   LongTerm_Focus      8     40.0      -12.0 0.2/0.3/0.5       N 32.083403 -17.697897 4.317910
+      LowVol_SL10      8     35.0      -10.0 0.3/0.4/0.3       N 22.595044 -21.612306 3.646357

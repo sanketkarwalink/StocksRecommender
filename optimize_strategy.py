@@ -12,10 +12,21 @@ from datetime import datetime
 try:
     from nifty500_universe import NIFTY500_TICKERS
     # Filter out known problematic tickers
-    PROBLEMATIC = {'CEAT.NS', 'PVR.NS', 'EQUITAS.NS', 'MINDTREE.NS', 'DRREDDYS.NS', 
-                   'INOXLEISUR.NS', 'JSW.NS', 'ALEMBICPH.NS', 'AARTI.NS', 'ZOMATO.NS',
-                   'UJJIVAN.NS', 'DCB.NS', 'CARTRADETECH.NS', 'CADILAHC.NS', 'L&TFH.NS',
-                   'VARUN.NS', 'ABBOTINDIA.NS', 'PHOENIXLTD.NS'}
+    PROBLEMATIC = {
+        'CEAT.NS', 'PVR.NS', 'EQUITAS.NS', 'MINDTREE.NS', 'DRREDDYS.NS',
+        'INOXLEISUR.NS', 'JSW.NS', 'ALEMBICPH.NS', 'AARTI.NS', 'ZOMATO.NS',
+        'UJJIVAN.NS', 'DCB.NS', 'CARTRADETECH.NS', 'CADILAHC.NS', 'L&TFH.NS',
+        'VARUN.NS', 'ABBOTINDIA.NS', 'PHOENIXLTD.NS', 'TATAMOTORS.NS', 'NAVABREXIM.NS',
+        'NARAYANA.NS', 'PRISMCEM.NS', 'WELSPUNIND.NS', 'RAMSINFO.NS', 'ZENSAR.NS',
+        'INFOSYS.NS', 'IIFLWAM.NS', 'TATACHEMICALS.NS', 'TATACOFFEE.NS', 'BATA.NS',
+        'ADITYADK.NS', 'COX&KINGS.NS', 'HBLPOWER.NS', 'TECHNICALA.NS', 'AMARAJABAT.NS',
+        'BHARAT FORGE.NS', 'SONA.NS', 'SAMVARDHNA.NS', 'HINDWARE.NS', 'SWANENERGY.NS',
+        'ADANITRANS.NS', 'ORIENTGREEN.NS', 'WEBSOL.NS', 'BOROSIL.NS', 'ORIENTALCARB.NS',
+        'GATI.NS', 'AEGISCHEM.NS', 'VRL.NS', 'SIYARAM.NS', 'KPR.NS',
+        'FINOLEX.NS', 'RELAXOHOME.NS', 'KALPATPOWR.NS', 'CENTURYTEXT.NS', 'APTECH.NS',
+        'NIITTECH.NS', 'FIRSTSOURCE.NS', 'HEXAWARE.NS', 'BALRAMPUR.NS', 'DHAMPUR.NS',
+        'FINOLEXIND.NS', 'INDIHOTEL.NS', 'PEL.NS', 'ENGINEERSIN.NS', 'TV18BRDCST.NS', 'INFOE.NS'
+    }
     TICKERS = [t for t in NIFTY500_TICKERS if t not in PROBLEMATIC]
 except:
     # Fallback to smaller working universe
@@ -43,24 +54,41 @@ def fetch_history(tickers, start_date, end_date):
     print(f"Fetching data for {len(tickers)} stocks from {start_date} to {end_date}...")
     
     frames = []
-    for batch in chunked(tickers, 40):
-        data = yf.download(
-            batch,
-            start=start_date,
-            end=end_date,
-            interval="1d",
-            auto_adjust=True,
-            progress=False,
-            group_by="ticker",
-        )
-        if data.empty:
+    failed_tickers = []
+    
+    for batch in chunked(tickers, 50):  # Increased from 40 to 50
+        try:
+            data = yf.download(
+                batch,
+                start=start_date,
+                end=end_date,
+                interval="1d",
+                auto_adjust=True,
+                progress=False,
+                group_by="ticker",
+            )
+            if data.empty:
+                failed_tickers.extend(batch)
+                continue
+            
+            if isinstance(data.columns, pd.MultiIndex):
+                prices = data.xs("Close", axis=1, level=1, drop_level=True)
+            else:
+                # Single ticker - handle edge case
+                prices = data[["Close"]]
+                prices.columns = batch[:1]
+            
+            # Track which tickers actually got data
+            actual_loaded = prices.columns.tolist()
+            failed_batch = [t for t in batch if t not in actual_loaded]
+            if failed_batch:
+                failed_tickers.extend(failed_batch)
+            
+            frames.append(prices)
+        except Exception as e:
+            print(f"Error downloading batch: {str(e)[:80]}")
+            failed_tickers.extend(batch)
             continue
-        if isinstance(data.columns, pd.MultiIndex):
-            prices = data.xs("Close", axis=1, level=1, drop_level=True)
-        else:
-            prices = data[["Close"]]
-            prices.columns = batch[:1]
-        frames.append(prices)
     
     if not frames:
         print("ERROR: No price data fetched!")
@@ -70,6 +98,8 @@ def fetch_history(tickers, start_date, end_date):
     combined = combined.loc[:, ~combined.columns.duplicated()]
     combined = combined.dropna(axis=1, thresh=int(0.8 * len(combined)))
     
+    if failed_tickers:
+        print(f"Failed to load {len(failed_tickers)} tickers: {failed_tickers[:10]}")
     print(f"Successfully loaded {len(combined.columns)} stocks")
     return combined
 
@@ -233,35 +263,16 @@ def run_backtest_enhanced(prices, start_date, end_date, top_n, vol_cap, stop_los
     }
 
 def optimize_strategy():
-    """Run optimization grid"""
-    START_DATE = '2019-01-01'
+    """Run optimization grid on full expanded universe (10-year validation)"""
+    # Extended period for robust backtest validation
+    START_DATE = '2016-01-01'  # Changed from 2019-01-01 for 10-year history
     END_DATE = '2026-01-02'
     
-    # Use smaller high-quality universe for faster optimization
-    CORE_TICKERS = [
-        "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS",
-        "KOTAKBANK.NS", "SBIN.NS", "AXISBANK.NS", "BAJFINANCE.NS", "BAJAJFINSV.NS",
-        "HCLTECH.NS", "WIPRO.NS", "TECHM.NS", "LT.NS", "ASIANPAINT.NS",
-        "HINDUNILVR.NS", "ITC.NS", "TITAN.NS", "MARUTI.NS", "M&M.NS",
-        "EICHERMOT.NS", "SUNPHARMA.NS", "CIPLA.NS", "DRREDDY.NS", "APOLLOHOSP.NS",
-        "DIVISLAB.NS", "ADANIENT.NS", "ADANIPORTS.NS", "POWERGRID.NS", "NTPC.NS",
-        "TATAPOWER.NS", "ONGC.NS", "BPCL.NS", "IOC.NS", "COALINDIA.NS",
-        "ULTRACEMCO.NS", "GRASIM.NS", "JSWSTEEL.NS", "TATASTEEL.NS", "HINDALCO.NS",
-        "BHARTIARTL.NS", "VEDL.NS", "NESTLEIND.NS", "BRITANNIA.NS", "DABUR.NS",
-        "GODREJCP.NS", "MARICO.NS", "INDUSINDBK.NS", "BAJAJ-AUTO.NS", "HEROMOTOCO.NS",
-        "TVSMOTOR.NS", "ASHOKLEY.NS", "TATACOMM.NS", "TATACONSUM.NS", "TATAMOTORS.NS",
-        "HAVELLS.NS", "PIDILITIND.NS", "BERGEPAINT.NS", "DMART.NS", "NAUKRI.NS",
-        "ZYDUSLIFE.NS", "BIOCON.NS", "LUPIN.NS", "GLENMARK.NS", "TORNTPHARM.NS",
-        "SHREECEM.NS", "AMBUJACEM.NS", "ACC.NS", "BANDHANBNK.NS", "FEDERALBNK.NS",
-        "PFC.NS", "RECLTD.NS", "IRCTC.NS", "HAL.NS", "BEL.NS",
-        "MPHASIS.NS", "LTF.NS", "CANBK.NS", "BANKBARODA.NS", "PNB.NS",
-        "GODREJPROP.NS", "DLF.NS", "OBEROIRLTY.NS", "PRESTIGE.NS", "PHOENIXLTD.NS",
-        "NAVABREXIM.NS", "TATACHEM.NS", "GNFC.NS", "DEEPAKNTR.NS", "AETHER.NS",
-        "TATAELXSI.NS", "COFORGE.NS", "PERSISTENT.NS", "LTTS.NS", "OFSS.NS"
-    ]
+    # Use full expanded universe (317 stocks) - NOT hardcoded limited list
+    # TICKERS is already defined at module level from nifty500_universe.py
     
     # Fetch data once
-    prices = fetch_history(CORE_TICKERS, START_DATE, END_DATE)
+    prices = fetch_history(TICKERS, START_DATE, END_DATE)
     
     # Parameter grid
     configurations = [

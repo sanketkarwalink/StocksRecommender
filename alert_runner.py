@@ -18,9 +18,8 @@ HOLDINGS_FILE = Path("data/holdings.yaml")
 
 def run_portfolio_tool() -> Path:
     """Run portfolio_tool.py and return path to latest report."""
-    python_exe = "/Users/sanketkarwa/PortfolioTracker/.venv/bin/python"
     result = subprocess.run(
-        [python_exe, "portfolio_tool.py"],
+        ["python", "portfolio_tool.py"],
         cwd=Path(__file__).parent,
         capture_output=True,
         text=True,

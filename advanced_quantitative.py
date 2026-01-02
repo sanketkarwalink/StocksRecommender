@@ -89,12 +89,27 @@ class AdvancedQuantStrategy:
         Score = w1 × R₁ₘ + w3 × R₃ₘ + w6 × R₆ₘ
         where R = (Price_today / Price_past - 1) × 100
         """
-        ret1m = window.pct_change(21, fill_method=None).iloc[-1] * 100
-        ret3m = window.pct_change(63, fill_method=None).iloc[-1] * 100
-        ret6m = window.pct_change(126, fill_method=None).iloc[-1] * 100
+        results = {}
         
-        scores = 0.3 * ret1m + 0.4 * ret3m + 0.3 * ret6m
-        return pd.Series(scores)
+        for ticker in window.columns:
+            col = window[ticker].dropna()
+            if len(col) < 126:
+                results[ticker] = 0
+                continue
+            
+            ret1m = col.pct_change(21, fill_method=None).iloc[-1] * 100 if len(col) >= 21 else 0
+            ret3m = col.pct_change(63, fill_method=None).iloc[-1] * 100 if len(col) >= 63 else 0
+            ret6m = col.pct_change(126, fill_method=None).iloc[-1] * 100 if len(col) >= 126 else 0
+            
+            # Handle NaN values
+            ret1m = ret1m if not pd.isna(ret1m) else 0
+            ret3m = ret3m if not pd.isna(ret3m) else 0
+            ret6m = ret6m if not pd.isna(ret6m) else 0
+            
+            score = 0.3 * ret1m + 0.4 * ret3m + 0.3 * ret6m
+            results[ticker] = score
+        
+        return pd.Series(results)
     
     def calculate_quality(self, window):
         """
@@ -106,21 +121,31 @@ class AdvancedQuantStrategy:
         
         Penalizes choppy/volatile trends, rewards smooth uptrends
         """
-        prices = window.iloc[-126:]  # 6 months
-        sma20 = prices.rolling(20).mean()
-        sma50 = prices.rolling(50).mean()
+        results = {}
         
-        # Trend strength (difference between moving averages)
-        trend_strength = np.abs(sma20 - sma50) / sma50 * 100
-        trend_strength = trend_strength.iloc[-1]
+        for ticker in window.columns:
+            col = window[ticker].dropna()
+            if len(col) < 50:
+                results[ticker] = 0
+                continue
+            
+            prices = col.iloc[-126:]  # 6 months
+            sma20 = prices.rolling(20).mean()
+            sma50 = prices.rolling(50).mean()
+            
+            # Trend strength (difference between moving averages)
+            trend_strength = np.abs(sma20 - sma50) / sma50 * 100
+            trend_strength_val = trend_strength.iloc[-1]
+            
+            # Stability (inverse of volatility)
+            daily_returns = prices.pct_change().dropna()
+            volatility = daily_returns.std()
+            stability = 1.0 / (1.0 + volatility * 10)  # Scale and invert
+            
+            quality = trend_strength_val * stability if not pd.isna(trend_strength_val) else 0
+            results[ticker] = quality
         
-        # Stability (inverse of volatility)
-        daily_returns = prices.pct_change().dropna()
-        volatility = daily_returns.std()
-        stability = 1.0 / (1.0 + volatility * 10)  # Scale and invert
-        
-        quality = trend_strength * stability
-        return pd.Series(quality, index=window.columns)
+        return pd.Series(results)
     
     def calculate_rsi(self, window):
         """
@@ -133,20 +158,32 @@ class AdvancedQuantStrategy:
         - RSI < 30 = Oversold (buying opportunity)
         - RSI 40-60 = Neutral (best signal quality)
         """
-        delta = window.diff()
-        gain = np.where(delta > 0, delta, 0)
-        loss = np.where(delta < 0, -delta, 0)
+        results = {}
         
-        avg_gain = pd.Series(gain).rolling(14).mean()
-        avg_loss = pd.Series(loss).rolling(14).mean()
+        for ticker in window.columns:
+            col = window[ticker]
+            delta = col.diff()
+            
+            gain = delta.copy()
+            gain[gain < 0] = 0
+            loss = -delta.copy()
+            loss[loss < 0] = 0
+            
+            avg_gain = gain.rolling(14).mean()
+            avg_loss = loss.rolling(14).mean()
+            
+            rs = avg_gain / (avg_loss + 1e-10)
+            rsi = 100 - (100 / (1 + rs))
+            
+            # Normalize RSI signal: higher score for 40-60 range
+            # Score = 1 - |RSI - 50| / 50 (peaks at 50, drops at extremes)
+            if not pd.isna(rsi.iloc[-1]):
+                normalized_signal = 1.0 - np.abs(rsi.iloc[-1] - 50) / 50
+                results[ticker] = normalized_signal
+            else:
+                results[ticker] = 0.5
         
-        rs = avg_gain / (avg_loss + 1e-10)
-        rsi = 100 - (100 / (1 + rs))
-        
-        # Normalize RSI signal: higher score for 40-60 range
-        # Score = 1 - |RSI - 50| / 50 (peaks at 50, drops at extremes)
-        normalized_signal = 1.0 - np.abs(rsi.iloc[-1] - 50) / 50
-        return pd.Series(normalized_signal, index=window.columns)
+        return pd.Series(results)
     
     def calculate_sharpe_ratio(self, window):
         """
@@ -156,13 +193,23 @@ class AdvancedQuantStrategy:
         Measures risk-adjusted returns
         Higher = Better returns for given risk
         """
-        returns = window.pct_change().dropna()
+        results = {}
         
-        mean_ret = returns.mean()
-        std_ret = returns.std()
+        for ticker in window.columns:
+            col = window[ticker].dropna()
+            if len(col) < 2:
+                results[ticker] = 0
+                continue
+            
+            returns = col.pct_change().dropna()
+            
+            mean_ret = returns.mean()
+            std_ret = returns.std()
+            
+            sharpe = (mean_ret / (std_ret + 1e-10)) * np.sqrt(252)
+            results[ticker] = sharpe if not pd.isna(sharpe) else 0
         
-        sharpe = (mean_ret / (std_ret + 1e-10)) * np.sqrt(252)
-        return pd.Series(sharpe, index=window.columns)
+        return pd.Series(results)
     
     def calculate_mean_reversion(self, window):
         """
@@ -179,15 +226,28 @@ class AdvancedQuantStrategy:
         
         Benefit: Catches reversal opportunities
         """
-        sma20 = window.rolling(20).mean()
-        std20 = window.rolling(20).std()
+        results = {}
         
-        z_score = (window - sma20) / (std20 + 1e-10)
+        for ticker in window.columns:
+            col = window[ticker].dropna()
+            if len(col) < 20:
+                results[ticker] = 0
+                continue
+            
+            sma20 = col.rolling(20).mean()
+            std20 = col.rolling(20).std()
+            
+            z_score = (col - sma20) / (std20 + 1e-10)
+            
+            # Mean reversion signal: return toward mean
+            # Score = -z_score (negative when overbought, positive when oversold)
+            if not pd.isna(z_score.iloc[-1]):
+                mr_signal = -z_score.iloc[-1]
+                results[ticker] = mr_signal
+            else:
+                results[ticker] = 0
         
-        # Mean reversion signal: return toward mean
-        # Score = -z_score (negative when overbought, positive when oversold)
-        mr_signal = -z_score.iloc[-1]
-        return pd.Series(mr_signal, index=window.columns)
+        return pd.Series(results)
     
     def calculate_volatility_risk(self, window):
         """
@@ -198,14 +258,24 @@ class AdvancedQuantStrategy:
         Penalizes high volatility stocks
         High volatility = higher losses in crashes
         """
-        returns = window.pct_change().dropna()
-        daily_vol = returns.std()
-        annual_vol = daily_vol * np.sqrt(252)
+        results = {}
         
-        # Penalty: increases as volatility increases
-        # -0 for vol=0, -0.5 for vol=100%, -1 for vol=∞
-        risk_penalty = -annual_vol / (1.0 + annual_vol) * 100
-        return pd.Series(risk_penalty, index=window.columns)
+        for ticker in window.columns:
+            col = window[ticker].dropna()
+            if len(col) < 2:
+                results[ticker] = 0
+                continue
+            
+            returns = col.pct_change().dropna()
+            daily_vol = returns.std()
+            annual_vol = daily_vol * np.sqrt(252)
+            
+            # Penalty: increases as volatility increases
+            # -0 for vol=0, -0.5 for vol=100%, -1 for vol=∞
+            risk_penalty = -annual_vol / (1.0 + annual_vol) * 100
+            results[ticker] = risk_penalty
+        
+        return pd.Series(results)
     
     def calculate_correlation_penalty(self, window, all_correlations, ticker):
         """
@@ -324,72 +394,99 @@ def run_advanced_backtest(prices, start_date, end_date):
     equity_curve = []
     
     # Calculate correlations (for diversification benefit)
-    daily_returns = prices.pct_change().dropna()
+    daily_returns = prices.pct_change(fill_method=None).dropna()
     correlations = daily_returns.corr()
     
-    for date in prices.resample('W-FRI').last().dropna(how='all').index:
-        current_prices = prices.resample('W-FRI').last().loc[date]
+    trading_dates = prices.resample('W-FRI').last().dropna(how='all').index
+    
+    for i, date in enumerate(trading_dates):
+        current_prices = prices.loc[date]
         valid_prices = current_prices.dropna()
         
         if len(valid_prices) < 10:
+            equity_curve.append({'date': date, 'value': cash})
             continue
         
         # Calculate composite scores
         scores_df = strategy.calculate_composite_score(prices.loc[:date], date, correlations)
         
         if scores_df.empty:
+            # Keep cash value if no signal
+            equity_curve.append({'date': date, 'value': cash})
             continue
         
         # Filter for quality signals
         mask = (
             (scores_df['original_volatility'] < 60) &  # Vol cap
             (scores_df['composite'] > 0) &  # Positive composite signal
-            (scores_df['momentum'] > 30)  # Minimum momentum threshold
+            (scores_df['momentum'] > 20)  # Minimum momentum threshold (relaxed)
         )
         filtered = scores_df[mask].sort_values('composite', ascending=False)
         
         if len(filtered) == 0:
+            equity_curve.append({'date': date, 'value': cash})
             continue
+        
+        # Calculate current portfolio value
+        portfolio_value = cash
+        for ticker in list(portfolio.keys()):
+            if ticker in valid_prices.index:
+                portfolio_value += portfolio[ticker]['shares'] * valid_prices[ticker]
+        
+        # Check and apply stop-losses
+        for ticker in list(portfolio.keys()):
+            if ticker in valid_prices.index:
+                shares = portfolio[ticker]['shares']
+                entry = portfolio[ticker]['entry_price']
+                current_price = valid_prices[ticker]
+                pnl_pct = (current_price - entry) / entry * 100
+                
+                if pnl_pct <= -8.0:
+                    cash += shares * current_price
+                    del portfolio[ticker]
         
         # Select top 6 based on composite score
         picks = filtered.head(6)
         
-        # Remove old positions not in picks
+        # Sell positions not in top picks
         to_sell = [t for t in portfolio if t not in picks.index]
         for ticker in to_sell:
-            shares = portfolio[ticker]['shares']
-            sell_price = valid_prices[ticker]
-            cash += shares * sell_price
-            del portfolio[ticker]
-        
-        # Check stop-losses
-        for ticker in list(portfolio.keys()):
-            shares = portfolio[ticker]['shares']
-            entry = portfolio[ticker]['entry_price']
-            current_price = valid_prices[ticker]
-            pnl_pct = (current_price - entry) / entry * 100
-            
-            if pnl_pct <= -8.0:
-                cash += shares * current_price
+            if ticker in valid_prices.index:
+                shares = portfolio[ticker]['shares']
+                sell_price = valid_prices[ticker]
+                cash += shares * sell_price
                 del portfolio[ticker]
         
-        # Calculate portfolio value
+        # Recalculate portfolio value
         portfolio_value = cash
         for ticker in portfolio:
             if ticker in valid_prices.index:
                 portfolio_value += portfolio[ticker]['shares'] * valid_prices[ticker]
         
-        # Rebalance with optimal position sizing
-        for ticker in picks.index:
-            score = picks.loc[ticker, 'composite']
-            vol = picks.loc[ticker, 'original_volatility']
-            
-            kelly_fraction = strategy.calculate_optimal_position_size(score, vol, portfolio_value)
-            target_value = portfolio_value * kelly_fraction
-            
-            if ticker not in portfolio:
+        # Rebalance with equal weight allocation for top 6
+        target_per_position = portfolio_value / 6.0  # Equal weight among 6 stocks
+        
+        for ticker in picks.index[:6]:
+            if ticker not in valid_prices.index:
+                continue
+                
+            if ticker in portfolio:
+                # Already own it, update if needed
+                shares = portfolio[ticker]['shares']
+                current_value = shares * valid_prices[ticker]
+                
+                if abs(current_value - target_per_position) > target_per_position * 0.1:
+                    # Rebalance if drift > 10%
+                    cash += current_value
+                    new_shares = int(target_per_position / valid_prices[ticker])
+                    if new_shares > 0 and new_shares * valid_prices[ticker] <= cash:
+                        portfolio[ticker]['shares'] = new_shares
+                        portfolio[ticker]['entry_price'] = valid_prices[ticker]
+                        cash -= new_shares * valid_prices[ticker]
+            else:
+                # New position
                 current_price = valid_prices[ticker]
-                shares_to_buy = int(target_value / current_price)
+                shares_to_buy = int(target_per_position / current_price)
                 
                 if shares_to_buy > 0:
                     cost = shares_to_buy * current_price
@@ -397,7 +494,7 @@ def run_advanced_backtest(prices, start_date, end_date):
                         portfolio[ticker] = {
                             'shares': shares_to_buy,
                             'entry_price': current_price,
-                            'score': score
+                            'score': picks.loc[ticker, 'composite']
                         }
                         cash -= cost
         

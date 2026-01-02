@@ -39,7 +39,9 @@ try:
         'GATI.NS', 'AEGISCHEM.NS', 'VRL.NS', 'SIYARAM.NS', 'KPR.NS',
         'FINOLEX.NS', 'RELAXOHOME.NS', 'KALPATPOWR.NS', 'CENTURYTEXT.NS', 'APTECH.NS',
         'NIITTECH.NS', 'FIRSTSOURCE.NS', 'HEXAWARE.NS', 'BALRAMPUR.NS', 'DHAMPUR.NS',
-        'FINOLEXIND.NS'  # Additional bad ticker
+        'FINOLEXIND.NS',  # Additional bad ticker
+        # Additional bad tickers from expanded universe
+        'INDIHOTEL.NS', 'PEL.NS', 'ENGINEERSIN.NS', 'TV18BRDCST.NS', 'INFOE.NS'
     }
     MOMENTUM_UNIVERSE = [t for t in NIFTY500_TICKERS if t not in PROBLEMATIC_TICKERS]
     print(f"Loaded NIFTY 500 universe: {len(MOMENTUM_UNIVERSE)} stocks (filtered {len(PROBLEMATIC_TICKERS)} bad tickers)")

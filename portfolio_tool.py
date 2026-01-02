@@ -261,28 +261,47 @@ def plan_rebalance(
     lines: List[str] = []
     tldr: List[str] = []
     sell_cash = 0.0
-    trims: List[Tuple[str, float]] = []
+    trims: List[Tuple[str, float, int, float, float]] = []  # (name, value, shares, price, new_value)
 
     for r in results:
-        if r.market_value is None or r.weight is None:
+        if r.market_value is None or r.weight is None or r.price is None:
             continue
         if r.action == "Sell":
+            # Full sell
             sell_cash += r.market_value
-            trims.append((r.holding.name, r.market_value))
+            trims.append((r.holding.name, r.market_value, r.holding.quantity, r.price, 0.0))
         elif r.weight > HARD_CAP_WEIGHT:
+            # Partial trim
             trim_value = (r.weight - HARD_CAP_WEIGHT) * total_market
-            sell_cash += trim_value
-            trims.append((r.holding.name, trim_value))
+            shares_to_sell = int(trim_value / r.price)
+            actual_trim_value = shares_to_sell * r.price
+            new_position_value = r.market_value - actual_trim_value
+            sell_cash += actual_trim_value
+            trims.append((r.holding.name, actual_trim_value, shares_to_sell, r.price, new_position_value))
 
     lines.append(f"Cash to redeploy (from sells/trims): {sell_cash:,.0f}")
     tldr.append(f"Cash to redeploy: ~{sell_cash:,.0f}")
     if not trims:
         lines.append("No sells/trims triggered; zero fresh cash.")
     else:
-        lines.append("Trims/Sells:")
-        for name, value in trims:
-            lines.append(f"- {name}: raise ~{value:,.0f}")
-        tldr.append("Trims/Sells: " + "; ".join([f"{n} ~{v:,.0f}" for n, v in trims]))
+        lines.append("\nDETAILED SELL/TRIM INSTRUCTIONS:")
+        lines.append("=" * 80)
+        tldr_parts = []
+        for name, value, shares, price, new_value in trims:
+            if new_value == 0:
+                # Full sell
+                lines.append(f"\n🔴 SELL ALL: {name}")
+                lines.append(f"   Sell {shares} shares @ ₹{price:,.2f} = ₹{value:,.2f}")
+                lines.append(f"   Position after: 0 shares (CLOSED)")
+                tldr_parts.append(f"{name} {shares}sh")
+            else:
+                # Partial trim
+                lines.append(f"\n✂️  TRIM: {name}")
+                lines.append(f"   Sell {shares} shares @ ₹{price:,.2f} = ₹{value:,.2f}")
+                lines.append(f"   Position after: ₹{new_value:,.2f} ({(new_value/total_market)*100:.1f}% weight)")
+                tldr_parts.append(f"{name} {shares}sh")
+        lines.append("=" * 80)
+        tldr.append("Trims/Sells: " + "; ".join(tldr_parts))
 
     if sell_cash <= 0:
         return "\n".join(lines), tldr
@@ -296,19 +315,30 @@ def plan_rebalance(
     buy_list = candidates[:3]
     per_slot = sell_cash / len(buy_list)
     prices = fetch_quotes([t for t, *_ in buy_list])
-    lines.append("Buys (cash-neutral redeploy):")
+    lines.append("\nDETAILED BUY INSTRUCTIONS:")
+    lines.append("=" * 80)
+    total_to_spend = 0.0
     for ticker, m1, m3, m6, vol, score in buy_list:
         price = prices.get(ticker)
         if not price:
-            lines.append(f"- {ticker}: price unavailable; skip")
+            lines.append(f"\n⚠️  {ticker}: price unavailable; skip")
             continue
         shares = int(per_slot // price)
         spend = shares * price
-        lines.append(
-            f"- {ticker}: {shares} sh @ ~{price:,.0f} -> spend ~{spend:,.0f} (mom score {score:0.1f}, 1m {m1:0.1f}%, 3m {m3:0.1f}%, 6m {m6:0.1f}%)"
-        )
+        total_to_spend += spend
+        lines.append(f"\n🟢 BUY: {ticker}")
+        lines.append(f"   Buy {shares} shares @ ₹{price:,.2f} = ₹{spend:,.2f}")
+        lines.append(f"   Momentum: score {score:.1f} | 1m +{m1:.1f}% | 3m +{m3:.1f}% | 6m +{m6:.1f}%")
+        lines.append(f"   Volatility: {vol:.1f}%")
         if shares > 0:
             tldr.append(f"Buy {shares} x {ticker} (~{spend:,.0f})")
+    
+    lines.append("=" * 80)
+    lines.append(f"\n💰 CASH SUMMARY:")
+    lines.append(f"   Total from sells/trims: ₹{sell_cash:,.2f}")
+    lines.append(f"   Total to deploy in buys: ₹{total_to_spend:,.2f}")
+    lines.append(f"   Remaining cash: ₹{sell_cash - total_to_spend:,.2f}")
+    
     return "\n".join(lines), tldr
 
 

@@ -19,7 +19,7 @@ HOLDINGS_FILE = Path("data/holdings.yaml")
 def run_portfolio_tool() -> Path:
     """Run portfolio_tool.py and return path to latest report."""
     result = subprocess.run(
-        ["python", "portfolio_tool.py"],
+        ["/Users/sanketkarwa/PortfolioTracker/.venv/bin/python", "portfolio_tool.py"],
         cwd=Path(__file__).parent,
         capture_output=True,
         text=True,
@@ -34,10 +34,35 @@ def run_portfolio_tool() -> Path:
     return reports[-1]
 
 
-def extract_tldr(report_path: Path) -> List[str]:
-    """Extract TLDR section from report."""
+def extract_detailed_actions(report_path: Path) -> str:
+    """Extract detailed sell/buy instructions from report."""
     text = report_path.read_text()
     lines = text.split("\n")
+    
+    # Find the detailed sections
+    detailed_start = -1
+    for i, line in enumerate(lines):
+        if "DETAILED SELL/TRIM INSTRUCTIONS:" in line:
+            detailed_start = i
+            break
+    
+    if detailed_start == -1:
+        # Fallback to TLDR if no detailed section
+        return extract_tldr_fallback(lines)
+    
+    # Extract from detailed section to end of cash summary
+    detailed_lines = []
+    for i in range(detailed_start, len(lines)):
+        line = lines[i]
+        if "Momentum short-list" in line:
+            break
+        detailed_lines.append(line)
+    
+    return "\n".join(detailed_lines).strip()
+
+
+def extract_tldr_fallback(lines: List[str]) -> str:
+    """Fallback: extract TLDR section."""
     tldr_lines = []
     in_tldr = False
     for line in lines:
@@ -49,19 +74,18 @@ def extract_tldr(report_path: Path) -> List[str]:
                 break
             if line.startswith("- "):
                 tldr_lines.append(line[2:].strip())
-    return tldr_lines
+    return "\n".join(f"• {item}" for item in tldr_lines)
 
 
-def send_telegram_alert(tldr: List[str], report_path: Path) -> None:
-    """Send Telegram message with TLDR actions."""
-    if not tldr or (len(tldr) == 1 and tldr[0] == "No actions suggested"):
+def send_telegram_alert(detailed_text: str, report_path: Path) -> None:
+    """Send Telegram message with detailed actions."""
+    if not detailed_text or "No actions" in detailed_text:
         return  # Skip if no actions
     
-    msg = "📊 **Portfolio Alert** 📊\n\n"
-    msg += "**Actions to take:**\n"
-    for item in tldr:
-        msg += f"• {item}\n"
-    msg += f"\n📄 Full report: {report_path.name}"
+    # Format for Telegram with monospace formatting for better readability
+    msg = "📊 *Portfolio Alert* 📊\n\n"
+    msg += f"`{detailed_text}`"
+    msg += f"\n\n📄 Full report: `{report_path.name}`"
     
     payload = {
         "chat_id": TELEGRAM_CHAT_ID,
@@ -72,7 +96,7 @@ def send_telegram_alert(tldr: List[str], report_path: Path) -> None:
     try:
         resp = requests.post(TELEGRAM_API, json=payload, timeout=10)
         if resp.status_code == 200:
-            print(f"✓ Telegram alert sent ({len(tldr)} action(s))")
+            print(f"✓ Telegram alert sent with detailed instructions")
         else:
             print(f"✗ Telegram send failed: {resp.text}")
     except Exception as e:
@@ -85,11 +109,11 @@ def main() -> None:
         report_path = run_portfolio_tool()
         print(f"Report saved: {report_path}")
         
-        tldr = extract_tldr(report_path)
-        print(f"Extracted TLDR: {tldr}")
+        detailed_text = extract_detailed_actions(report_path)
+        print(f"Extracted detailed actions ({len(detailed_text)} chars)")
         
-        if tldr:
-            send_telegram_alert(tldr, report_path)
+        if detailed_text:
+            send_telegram_alert(detailed_text, report_path)
         else:
             print("No actions to alert on.")
     except Exception as e:

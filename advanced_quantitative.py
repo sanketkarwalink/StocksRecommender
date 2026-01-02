@@ -397,9 +397,11 @@ def run_advanced_backtest(prices, start_date, end_date):
     daily_returns = prices.pct_change(fill_method=None).dropna()
     correlations = daily_returns.corr()
     
+    # Get actual trading dates (filter to dates that exist in prices)
     trading_dates = prices.resample('W-FRI').last().dropna(how='all').index
+    actual_trading_dates = [d for d in trading_dates if d in prices.index]
     
-    for i, date in enumerate(trading_dates):
+    for i, date in enumerate(actual_trading_dates):
         current_prices = prices.loc[date]
         valid_prices = current_prices.dropna()
         

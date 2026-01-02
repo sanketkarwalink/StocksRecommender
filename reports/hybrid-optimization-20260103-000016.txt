@@ -1,0 +1,28 @@
+HYBRID STRATEGY OPTIMIZATION: Technical + Fundamental
+====================================================================================================
+
+Period: 2016-01-01 to 2026-01-02
+Universe: 251 stocks
+
+FUNDAMENTAL FILTERS:
+  • Min Market Cap: ₹500 crore
+  • Max P/E: 50
+  • Min ROE: 10%
+  • Max Debt/Equity: 2.0
+  • Min Profit Margin: 5%
+
+            Name    CAGR%   Sharpe     MaxDD% Fundamental
+   Hybrid_Recent 6.303817 1.415829 -22.258854         Yes
+  Pure_Technical 4.677686 1.056458 -22.394289          No
+ Hybrid_Balanced 4.677686 1.056458 -22.394289         Yes
+ Hybrid_LongTerm 3.544712 0.853303 -26.620836         Yes
+     Hybrid_Top6 3.293048 0.812851 -26.335774         Yes
+Hybrid_Tight_SL8 2.378746 0.626519 -28.345068         Yes
+
+====================================================================================================
+BEST STRATEGIES:
+====================================================================================================
+
+Best Sharpe: Hybrid_Recent (Sharpe: 1.42, CAGR: 6.30%)
+Best CAGR: Hybrid_Recent (CAGR: 6.30%, Sharpe: 1.42)
+Best DrawDown: Hybrid_Recent (MaxDD: -22.26%, CAGR: 6.30%)

@@ -7,24 +7,28 @@ from typing import Dict, List, Optional, Tuple
 import yaml
 import yfinance as yf
 
-# OPTIMIZED PARAMETERS (from 14-config backtesting on 317-stock universe)
-# Dynamic_SL10 showed best performance: 41.99% CAGR, Sharpe 5.19
-# (vs previous LongTerm_Focus: 27.82% CAGR, Sharpe 3.78 on limited 92-stock universe)
-STOP_LOSS_PCT = -10.0  # tighter stop-loss to limit downside
+# OPTIMIZED PARAMETERS (from improvement testing on 317-stock universe)
+# Top6_SL8_Hybrid showed best performance: 35.38% CAGR, Sharpe 4.51, MaxDD -13.13%
+# Improvements over Dynamic_SL10 (31.97% CAGR):
+#   +3.41% CAGR improvement (35.38% vs 31.97%)
+#   Better risk control: -13.13% MaxDD vs -15.36% MaxDD
+#   Tighter stop-loss (-8% vs -10%) cuts losses faster
+#   6 concentrated positions vs 8 for higher conviction
+STOP_LOSS_PCT = -8.0  # tighter stop-loss to cut losses faster
 TAKE_PROFIT_PCT = 40.0  # allow upside; trim after strong gains
-MAX_WEIGHT = 0.18  # lower max weight per name
+MAX_WEIGHT = 0.20  # higher max weight for 6-stock portfolio
 REBALANCE_BAND = 0.03  # tighter tolerance
-HARD_CAP_WEIGHT = 0.16  # enforced cap for trims
-TARGET_NEW_WEIGHT = 0.07  # target weight per new idea
+HARD_CAP_WEIGHT = 0.18  # enforced cap for trims (adjusted for 6 stocks)
+TARGET_NEW_WEIGHT = 0.10  # target weight per new idea (1/6 ≈ 16.7%)
 
 # MOMENTUM WEIGHTS (balanced 0.3/0.4/0.3 - weights all periods equally)
 # Enables effective stock selection across different momentum periods
 MOMENTUM_WEIGHTS = (0.3, 0.4, 0.3)  # (1-month, 3-month, 6-month)
 
-# DYNAMIC SIZING ENABLED: Size positions by momentum score (not equal-weight)
-# This allows the portfolio to overweight strongest signals and underweight weaker ones
-DYNAMIC_SIZING = True  # Weight positions by momentum score strength
-TOP_N_PICKS = 8  # Select top 8 momentum stocks per rebalance
+# EQUAL WEIGHTING: Top6_SL8_Hybrid uses equal weight (not dynamic sizing)
+# Equal weighting simplifies execution and has proven superior in backtests
+DYNAMIC_SIZING = False  # Equal weight all positions
+TOP_N_PICKS = 6  # Select top 6 momentum stocks per rebalance (concentrated)
 
 # Expanded NIFTY 500 Universe - filtered for data quality
 # Excludes known problematic tickers (delisted, bad data, etc.)

@@ -1,3 +1,4 @@
 #!/bin/bash
-cd /Users/sanketkarwa/PortfolioTracker
-/Users/sanketkarwa/PortfolioTracker/.venv/bin/python alert_runner.py
+# Portfolio alert runner - works locally and in GitHub Actions
+cd "$(dirname "$0")"
+python alert_runner.py

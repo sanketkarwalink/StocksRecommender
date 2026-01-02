@@ -1,6 +1,7 @@
 import json
 import re
 import subprocess
+import sys
 from pathlib import Path
 from typing import List
 
@@ -19,7 +20,7 @@ HOLDINGS_FILE = Path("data/holdings.yaml")
 def run_portfolio_tool() -> Path:
     """Run portfolio_tool.py and return path to latest report."""
     result = subprocess.run(
-        ["/Users/sanketkarwa/PortfolioTracker/.venv/bin/python", "portfolio_tool.py"],
+        [sys.executable, "portfolio_tool.py"],
         cwd=Path(__file__).parent,
         capture_output=True,
         text=True,

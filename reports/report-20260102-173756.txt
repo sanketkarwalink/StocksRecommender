@@ -1,0 +1,46 @@
+TLDR:
+- Cash to redeploy: ~12,945
+- Trims/Sells: Tata Elxsi ~5,338; Infosys ~467; Aether Industries ~1,954; HDB Financial Services ~4,487; ITC ~700
+- Buy 22 x ASHOKLEY.NS (~4,153)
+- Buy 13 x LTF.NS (~4,157)
+- Buy 16 x FEDERALBNK.NS (~4,271)
+
+Report date: 2026-01-02
+
+Name                       Qty        Avg      Price      Mkt Val          PnL    PnL%    Wt%   Action Note
+-----------------------------------------------------------------------------------------------------------
+Tata Elxsi                   1    6120.50   5,337.50     5,337.50      -783.00   -12.8   10.2     Sell Stop loss hit
+Waaree Energies              1    1503.00   2,866.30     2,866.30     1,363.30    90.7    5.5     Hold Within bands
+Infosys                      6    1630.10   1,640.40     9,842.40        61.80     0.6   18.9     Hold Within bands
+SBI                          7     810.85     998.95     6,992.65     1,316.70    23.2   13.4     Hold Within bands
+Aether Industries           12     780.85     944.10    11,329.20     1,959.00    20.9   21.8     Hold Within bands
+HDB Financial Services      18     740.00     770.15    13,862.70       542.70     4.1   26.6     Trim Overweight vs cap
+ITC                          2     402.25     350.05       700.10      -104.40   -13.0    1.3     Sell Stop loss hit
+IRFC                         9     137.85     128.48     1,156.32       -84.33    -6.8    2.2     Hold Within bands
+-
+Invested: 47,815.40 | Market: 52,087.17 | PnL: 4,271.77 (8.93%)
+
+Momentum short-list (top 12, vol<60%):
+- ASHOKLEY.NS: score 34.8 | 1m 17.8% | 3m 34.6% | 6m 52.2% | vol 26.8%
+- LTF.NS: score 28.6 | 1m 6.4% | 3m 23.7% | 6m 57.5% | vol 31.8%
+- FEDERALBNK.NS: score 24.7 | 1m 3.2% | 3m 37.8% | 6m 28.9% | vol 20.7%
+- MUTHOOTFIN.NS: score 24.2 | 1m 3.2% | 3m 21.5% | 6m 48.6% | vol 27.7%
+- CANBK.NS: score 23.4 | 1m 5.1% | 3m 25.1% | 6m 39.5% | vol 22.0%
+- AUBANK.NS: score 22.9 | 1m 5.3% | 3m 36.6% | 6m 22.1% | vol 25.7%
+- HINDALCO.NS: score 22.7 | 1m 14.2% | 3m 20.9% | 6m 33.7% | vol 23.0%
+- ABCAPITAL.NS: score 19.4 | 1m 3.4% | 3m 20.5% | 6m 34.1% | vol 24.7%
+- UPL.NS: score 18.3 | 1m 6.4% | 3m 21.6% | 6m 25.9% | vol 18.5%
+- IDFCFIRSTB.NS: score 17.8 | 1m 7.6% | 3m 24.5% | 6m 19.1% | vol 23.4%
+
+Cash-neutral rebalance plan:
+Cash to redeploy (from sells/trims): 12,945
+Trims/Sells:
+- Tata Elxsi: raise ~5,338
+- Infosys: raise ~467
+- Aether Industries: raise ~1,954
+- HDB Financial Services: raise ~4,487
+- ITC: raise ~700
+Buys (cash-neutral redeploy):
+- ASHOKLEY.NS: 22 sh @ ~189 -> spend ~4,153 (mom score 34.8, 1m 17.8%, 3m 34.6%, 6m 52.2%)
+- LTF.NS: 13 sh @ ~320 -> spend ~4,157 (mom score 28.6, 1m 6.4%, 3m 23.7%, 6m 57.5%)
+- FEDERALBNK.NS: 16 sh @ ~267 -> spend ~4,271 (mom score 24.7, 1m 3.2%, 3m 37.8%, 6m 28.9%)

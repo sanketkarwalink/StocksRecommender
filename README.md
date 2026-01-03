@@ -142,3 +142,11 @@ This module builds a long-term SIP portfolio using quarterly fundamentals for in
 python monthly_sip.py --config config.yaml
 ```
 Report saves to `reports/`.
+
+**Real data setup**
+- Provide `data/fundamentals.csv` with columns:
+    `ticker,name,sector,market_cap_cr,listing_years,adv_cr,roce,debt_to_equity,sales_cagr_5y,profit_cagr_5y,fcf_3y_positive,promoter_holding,promoter_change_pct,pe,pb,peg,sector_pe_median`
+- Tickers should match `nifty500_universe.py` tickers. CSV is filtered to NIFTY500 and hard rules.
+- Prices and trend signals pull from Yahoo Finance via `yfinance` using the filtered tickers; NIFTY50 regime uses symbol from config (default `^NSEI`).
+
+If `data/fundamentals.csv` is missing, the pipeline falls back to mock data for demonstration only.

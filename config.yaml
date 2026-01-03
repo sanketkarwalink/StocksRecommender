@@ -45,3 +45,8 @@ regime:
 
 reporting:
   output_dir: reports
+
+data:
+  fundamentals_csv: data/fundamentals.csv  # provide Screener-exported or custom CSV
+  price_lookback_days: 260
+  nifty_symbol: "^NSEI"

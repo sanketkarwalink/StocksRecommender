@@ -19,6 +19,7 @@ MAX_WEIGHT = 0.20  # higher max weight for 6-stock portfolio
 REBALANCE_BAND = 0.03  # tighter tolerance
 HARD_CAP_WEIGHT = 0.18  # enforced cap for trims (adjusted for 6 stocks)
 TARGET_NEW_WEIGHT = 0.10  # target weight per new idea (1/6 ≈ 16.7%)
+VOL_CAP = 40.0  # volatility ceiling for momentum screen
 
 # MOMENTUM WEIGHTS (balanced 0.3/0.4/0.3 - weights all periods equally)
 # Enables effective stock selection across different momentum periods
@@ -88,6 +89,22 @@ except ImportError:
         "LTIM.NS", "COFORGE.NS", "INDIAMART.NS", "POLYCAB.NS", "KEI.NS", "APLAPOLLO.NS",
     ]
     print(f"Using fallback universe: {len(MOMENTUM_UNIVERSE)} stocks")
+
+
+def parse_momentum_weights(value: str) -> Tuple[float, float, float]:
+    parts = value.split(",")
+    if len(parts) != 3:
+        raise argparse.ArgumentTypeError(
+            "Momentum weights must be three comma-separated numbers like 0.3,0.4,0.3"
+        )
+    try:
+        weights = tuple(float(p) for p in parts)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("Momentum weights must be numeric") from exc
+    total = sum(weights)
+    if total <= 0:
+        raise argparse.ArgumentTypeError("Momentum weights must sum to a positive value")
+    return weights  # type: ignore[return-value]
 
 
 @dataclass
@@ -199,7 +216,7 @@ def build_positions(holdings: List[Holding]) -> Tuple[List[PositionResult], floa
     return results, total_market, total_cost
 
 
-def momentum_screen(top_n: int = 8, vol_cap: float = 40.0) -> List[Tuple[str, float, float, float, float, float]]:
+def momentum_screen(top_n: int = TOP_N_PICKS, vol_cap: float = VOL_CAP) -> List[Tuple[str, float, float, float, float, float]]:
     rows: List[Tuple[str, float, float, float, float, float]] = []
     for ticker in MOMENTUM_UNIVERSE:
         try:
@@ -318,6 +335,8 @@ def save_outputs(
     momentum: List[Tuple[str, float, float, float, float, float]],
     plan: str,
     tldr: List[str],
+    top_n: int,
+    vol_cap: float,
 ) -> Path:
     out_dir = Path("reports")
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -332,7 +351,7 @@ def save_outputs(
         lines.append("- No actions suggested")
     lines.append("")
     lines.append(report)
-    lines.append("\nMomentum short-list (top 12, vol<60%):")
+    lines.append(f"\nMomentum short-list (top {len(momentum)}, vol<{vol_cap:.0f}%):")
     for t, m1, m3, m6, vol, score in momentum:
         lines.append(f"- {t}: score {score:0.1f} | 1m {m1:0.1f}% | 3m {m3:0.1f}% | 6m {m6:0.1f}% | vol {vol:0.1f}%")
     lines.append("\nCash-neutral rebalance plan:")
@@ -367,22 +386,55 @@ def render_report(results: List[PositionResult], total_market: float, total_cost
 
 
 def main() -> None:
+    global STOP_LOSS_PCT, TAKE_PROFIT_PCT, MAX_WEIGHT, HARD_CAP_WEIGHT, REBALANCE_BAND
+    global DYNAMIC_SIZING, TOP_N_PICKS, VOL_CAP, MOMENTUM_WEIGHTS
+
     parser = argparse.ArgumentParser(description="Portfolio tracker for Indian equities")
     parser.add_argument("--file", type=Path, default=Path("data/holdings.yaml"), help="Path to holdings YAML")
+    parser.add_argument("--top-n", type=int, default=TOP_N_PICKS, help="Number of stocks to hold (momentum top-N)")
+    parser.add_argument("--stop-loss", type=float, default=STOP_LOSS_PCT, help="Stop-loss percentage (negative)")
+    parser.add_argument("--take-profit", type=float, default=TAKE_PROFIT_PCT, help="Take-profit / trim threshold")
+    parser.add_argument("--max-weight", type=float, default=MAX_WEIGHT, help="Soft max weight before trim")
+    parser.add_argument("--hard-cap-weight", type=float, default=HARD_CAP_WEIGHT, help="Hard cap weight to trigger trims")
+    parser.add_argument("--rebalance-band", type=float, default=REBALANCE_BAND, help="Tolerance band around max weight")
+    parser.add_argument("--vol-cap", type=float, default=VOL_CAP, help="Volatility cap for momentum screen")
+    parser.add_argument(
+        "--momentum-weights",
+        type=parse_momentum_weights,
+        default=None,
+        help="Comma-separated weights for 1m,3m,6m momentum (e.g., 0.3,0.4,0.3)",
+    )
+    parser.add_argument(
+        "--dynamic-sizing",
+        action="store_true",
+        default=DYNAMIC_SIZING,
+        help="Weight positions by momentum score instead of equal weight",
+    )
     args = parser.parse_args()
+
+    default_weights = MOMENTUM_WEIGHTS
+    STOP_LOSS_PCT = args.stop_loss
+    TAKE_PROFIT_PCT = args.take_profit
+    MAX_WEIGHT = args.max_weight
+    HARD_CAP_WEIGHT = args.hard_cap_weight
+    REBALANCE_BAND = args.rebalance_band
+    DYNAMIC_SIZING = args.dynamic_sizing
+    TOP_N_PICKS = args.top_n
+    VOL_CAP = args.vol_cap
+    MOMENTUM_WEIGHTS = args.momentum_weights if args.momentum_weights else default_weights
 
     holdings = load_holdings(args.file)
     results, total_market, total_cost = build_positions(holdings)
     report = render_report(results, total_market, total_cost)
-    momentum = momentum_screen()
+    momentum = momentum_screen(top_n=TOP_N_PICKS, vol_cap=VOL_CAP)
     plan, tldr = plan_rebalance(results, total_market, momentum)
     print(report)
-    print("\nMomentum short-list (top 12, vol<60%):")
+    print(f"\nMomentum short-list (top {len(momentum)}, vol<{VOL_CAP:.0f}%):")
     for t, m1, m3, m6, vol, score in momentum:
         print(f"- {t}: score {score:0.1f} | 1m {m1:0.1f}% | 3m {m3:0.1f}% | 6m {m6:0.1f}% | vol {vol:0.1f}%")
     print("\nCash-neutral rebalance plan:")
     print(plan)
-    saved = save_outputs(report, momentum, plan, tldr)
+    saved = save_outputs(report, momentum, plan, tldr, TOP_N_PICKS, VOL_CAP)
     print(f"\nSaved actions to {saved}")
 
 

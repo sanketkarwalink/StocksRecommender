@@ -21,7 +21,11 @@ result = subprocess.run([
     "--top-n", "6",
     "--stop-loss", "-10.0",
     "--take-profit", "40.0",
-    "--max-weight", "0.20"
+    "--max-weight", "0.20",
+    "--hard-cap-weight", "0.18",
+    "--rebalance-band", "0.03",
+    "--vol-cap", "40.0",
+    "--momentum-weights", "0.3,0.4,0.3"
 ], capture_output=False)
 
 sys.exit(result.returncode)

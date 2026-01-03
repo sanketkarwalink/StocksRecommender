@@ -1,0 +1,47 @@
+universe:
+  min_market_cap_cr: 3000
+  min_listing_years: 3
+  min_adv_cr: 5
+
+fundamentals:
+  min_roce: 15
+  max_debt_to_equity: 0.6
+  min_sales_cagr_5y: 8
+  min_score: 65
+  min_promoter_holding: 45
+  min_profit_cagr_5y: 0
+  require_positive_fcf_3y: true
+
+valuation:
+  peg_positive_max: 1.5
+  pb_ceiling: 3.0
+  sector_pe_discount: 0.0  # PE below sector PE tagged undervalued
+
+trend:
+  rsi_low: 40
+  rsi_high: 65
+  min_return_3m: 0.0
+  min_return_6m: 0.0
+
+sip:
+  base_amount: 10000
+  multipliers:
+    undervalued_accumulate: 1.25
+    fair_accumulate: 1.0
+    overvalued_accumulate: 0.75
+    neutral: 0.5
+    pause: 0.0
+
+constraints:
+  min_stocks: 12
+  max_stocks: 18
+  max_weight: 0.12
+  max_sector_weight: 0.25
+  max_sector_positions: 2
+  sector_override_score: 80
+
+regime:
+  reduce_fraction_if_below_200dma: 0.40
+
+reporting:
+  output_dir: reports
